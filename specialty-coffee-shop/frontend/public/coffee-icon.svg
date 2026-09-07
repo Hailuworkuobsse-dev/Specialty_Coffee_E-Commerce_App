@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <!-- Coffee Cup -->
+  <path d="M30 25 C30 20, 70 20, 70 25 L70 70 C70 80, 30 80, 30 70 Z" fill="#6f5242"/>
+  <path d="M70 30 C80 30, 80 65, 70 65" stroke="#6f5242" stroke-width="4" stroke-linecap="round"/>
+  
+  <!-- Steam -->
+  <path d="M40 15 Q45 5, 40 -5" stroke="#d4a017" stroke-width="3" stroke-linecap="round" opacity="0.6"/>
+  <path d="M50 12 Q55 2, 50 -8" stroke="#d4a017" stroke-width="3" stroke-linecap="round" opacity="0.6"/>
+  <path d="M60 15 Q65 5, 60 -5" stroke="#d4a017" stroke-width="3" stroke-linecap="round" opacity="0.6"/>
+  
+  <!-- Handle Highlight -->
+  <ellipse cx="50" cy="47.5" rx="15" ry="22.5" fill="#8a6d57"/>
+  <ellipse cx="50" cy="47.5" rx="12" ry="19" fill="#fdf8f0"/>
+</svg>

@@ -1,0 +1,96 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap');
+
+@layer base {
+  * {
+    @apply border-espresso-200;
+  }
+  
+  body {
+    @apply bg-cream-50 text-charcoal DEFAULT font-sans antialiased;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display text-espresso-900;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-espresso-700 hover:bg-espresso-800 text-cream-50 font-medium py-3 px-6 rounded-lg transition-all duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-espresso-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  
+  .btn-secondary {
+    @apply bg-cream-200 hover:bg-cream-300 text-espresso-800 font-medium py-3 px-6 rounded-lg transition-all duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-cream-400 focus:ring-offset-2;
+  }
+  
+  .btn-outline {
+    @apply border-2 border-espresso-600 text-espresso-700 hover:bg-espresso-50 font-medium py-3 px-6 rounded-lg transition-all duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-espresso-500 focus:ring-offset-2;
+  }
+  
+  .card {
+    @apply bg-white rounded-xl shadow-sm border border-espresso-100 overflow-hidden hover:shadow-md transition-shadow duration-300;
+  }
+  
+  .input-field {
+    @apply w-full px-4 py-3 border border-espresso-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-espresso-400 focus:border-transparent bg-white text-espresso-900 placeholder-espresso-400;
+  }
+  
+  .badge {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-cream-200 text-espresso-700;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-cream-100;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-espresso-400 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-espresso-500;
+}
+
+/* Slide-in animation for cart sidebar */
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.slide-in {
+  animation: slideIn 0.3s ease-out forwards;
+}
+
+/* Fade in animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.2s ease-out forwards;
+}
+
+/* Loading spinner */
+.spinner {
+  @apply animate-spin h-8 w-8 border-4 border-espresso-200 border-t-espresso-700 rounded-full;
+}
