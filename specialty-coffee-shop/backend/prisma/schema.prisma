@@ -1,47 +1,319 @@
-// Prisma schema for Specialty Coffee Shop MySQL Database
+// Prisma schema for Specialty Coffee Shop PostgreSQL Database
+// Phase 1: Foundation & Security Remediation
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-model Product {
-  id          Int       @id @default(autoincrement())
-  name        String    @db.VarChar(255)
-  description String    @db.Text
-  price       Decimal   @db.Decimal(10, 2)
-  image_url   String    @db.VarChar(500)
-  category    String    @db.VarChar(100)
-  stock       Int       @default(0)
-  createdAt   DateTime  @default(now()) @map("created_at")
-  cartItems   CartItem[]
+// User roles for RBAC (Phase 4)
+enum Role {
+  GUEST
+  CUSTOMER
+  MANAGER
+  FULFILLMENT
+  ADMIN
+}
+
+// Product status for inventory management
+enum ProductStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+  OUT_OF_STOCK
+}
+
+// Order status tracking
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  RETURNED
+  REFUNDED
+}
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  password      String
+  firstName     String
+  lastName      String
+  phone         String?
+  role          Role      @default(CUSTOMER)
+  isActive      Boolean   @default(true)
+  lastLoginAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
   
+  // Relations
+  cart          Cart?
+  orders        Order[]
+  refreshTokens RefreshToken[]
+  
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("refresh_tokens")
+}
+
+model Product {
+  id              String        @id @default(uuid())
+  name            String
+  slug            String        @unique
+  description     String        @db.Text
+  shortDescription String?
+  price           Decimal       @db.Decimal(10, 2)
+  comparePrice    Decimal?      @db.Decimal(10, 2)
+  costPrice       Decimal?      @db.Decimal(10, 2)
+  currency        String        @default("USD")
+  stockCount      Int           @default(0)
+  reservedCount   Int           @default(0)
+  minOrderQty     Int           @default(1)
+  maxOrderQty     Int           @default(100)
+  
+  // Extended product attributes (28 total)
+  origin          String?
+  region          String?
+  farm            String?
+  variety         String?
+  process         String?       // Natural, Washed, Honey
+  roastLevel      String?       // Light, Medium, Dark
+  altitude        String?
+  tastingNotes    String?
+  flavorProfile   String?
+  body            String?
+  acidity         String?
+  sweetness       String?
+  aroma           String?
+  aftertaste      String?
+  brewMethod      String?
+  grindSize       String?
+  waterTemp       String?
+  ratio           String?
+  harvestDate     DateTime?
+  roastDate       DateTime?
+  expiryDate      DateTime?
+  weight          Decimal?      @db.Decimal(10, 2)
+  dimensions      Json?         // { length, width, height }
+  ingredients     String[]
+  allergens       String[]
+  certifications  String[]
+  farmerStory     String?       @db.Text
+  processingStory String?       @db.Text
+  
+  // SEO & Metadata
+  seoTitle        String?
+  seoDescription String?
+  seoKeywords     String[]
+  tags            String[]
+  
+  // Status & Visibility
+  status          ProductStatus @default(DRAFT)
+  isVisible       Boolean       @default(true)
+  isFeatured      Boolean       @default(false)
+  
+  categoryId      String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  publishedAt     DateTime?
+  
+  // Relations
+  category        Category?     @relation(fields: [categoryId], references: [id])
+  cartItems       CartItem[]
+  orderItems      OrderItem[]
+  images          ProductImage[]
+  
+  @@index([slug])
+  @@index([categoryId])
+  @@index([status])
+  @@index([isVisible])
+  @@index([origin])
+  @@index([process])
+  @@index([roastLevel])
   @@map("products")
 }
 
-model CartItem {
-  id         Int      @id @default(autoincrement())
-  productId  Int      @map("product_id")
-  quantity   Int      @default(1)
-  sessionId  String   @map("session_id") @db.VarChar(255)
+model Category {
+  id          String     @id @default(uuid())
+  name        String
+  slug        String     @unique
+  description String?
+  parentId    String?
+  sortOrder   Int        @default(0)
+  isActive    Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  
+  // Relations
+  parent      Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children    Category[] @relation("CategoryHierarchy")
+  products    Product[]
+  
+  @@index([slug])
+  @@index([parentId])
+  @@map("categories")
+}
+
+model ProductImage {
+  id         String   @id @default(uuid())
+  productId  String
+  url        String
+  altText    String?
+  sortOrder  Int      @default(0)
+  isPrimary  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  
   product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  createdAt  DateTime @default(now()) @map("created_at")
+  
+  @@index([productId])
+  @@map("product_images")
+}
+
+model Cart {
+  id         String    @id @default(uuid())
+  sessionId  String    @unique // Linked to HTTP-only cookie session
+  userId     String?   @unique // Null for guest carts
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  
+  // Relations
+  user       User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  items      CartItem[]
   
   @@index([sessionId])
+  @@index([userId])
+  @@map("carts")
+}
+
+model CartItem {
+  id         String   @id @default(uuid())
+  cartId     String
+  productId  String
+  quantity   Int      @default(1)
+  addedAt    DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  
+  // Relations
+  cart       Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  @@unique([cartId, productId])
+  @@index([cartId])
+  @@index([productId])
   @@map("cart_items")
 }
 
 model Order {
-  id         Int      @id @default(autoincrement())
-  sessionId  String   @map("session_id") @db.VarChar(255)
-  total      Decimal  @db.Decimal(10, 2)
-  status     String   @default("pending") @db.VarChar(50)
-  createdAt  DateTime @default(now()) @map("created_at")
+  id              String      @id @default(uuid())
+  orderNumber     String      @unique
+  userId          String
+  sessionId       String      // For guest checkout tracking
   
+  // Pricing
+  subtotal        Decimal     @db.Decimal(10, 2)
+  discountAmount  Decimal     @default(0) @db.Decimal(10, 2)
+  taxAmount       Decimal     @default(0) @db.Decimal(10, 2)
+  shippingAmount  Decimal     @default(0) @db.Decimal(10, 2)
+  totalAmount     Decimal     @db.Decimal(10, 2)
+  currency        String      @default("USD")
+  
+  // Status tracking
+  status          OrderStatus @default(PENDING)
+  paymentStatus   String      @default("pending")
+  shippingStatus  String      @default("pending")
+  
+  // Customer info snapshot
+  customerEmail   String
+  customerName    String
+  customerPhone   String?
+  
+  // Addresses
+  billingAddress  Json?
+  shippingAddress Json?
+  
+  // Notes
+  customerNotes   String?
+  internalNotes   String?
+  
+  // Tracking
+  trackingNumber  String?
+  shippedAt       DateTime?
+  deliveredAt     DateTime?
+  cancelledAt     DateTime?
+  cancellationReason String?
+  
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  
+  // Relations
+  user            User        @relation(fields: [userId], references: [id])
+  items           OrderItem[]
+  
+  @@index([orderNumber])
+  @@index([userId])
   @@index([sessionId])
+  @@index([status])
+  @@index([createdAt])
   @@map("orders")
+}
+
+model OrderItem {
+  id            String   @id @default(uuid())
+  orderId       String
+  productId     String
+  productName   String   // Snapshot at time of order
+  productSku    String   // Snapshot at time of order
+  quantity      Int
+  unitPrice     Decimal  @db.Decimal(10, 2)
+  totalPrice    Decimal  @db.Decimal(10, 2)
+  taxRate       Decimal  @default(0) @db.Decimal(5, 4)
+  taxAmount     Decimal  @default(0) @db.Decimal(10, 2)
+  discountAmount Decimal @default(0) @db.Decimal(10, 2)
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Relations
+  order         Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product       Product  @relation(fields: [productId], references: [id])
+  
+  @@index([orderId])
+  @@index([productId])
+  @@map("order_items")
+}
+
+// Audit log for admin actions (Phase 5)
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String?
+  action     String
+  resource   String
+  resourceId String?
+  oldValues  Json?
+  newValues  Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+  
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_logs")
 }
