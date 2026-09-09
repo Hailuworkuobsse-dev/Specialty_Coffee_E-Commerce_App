@@ -1,4 +1,6 @@
-```markdown
 # Documentation and requirements files
 *.md
-```
+!UPGRADE_PLAN.md
+!README.md
+!FUNCTIONAL_REQUIREMENTS.md
+!ACCEPTANCE_TEST_PLAN.md
