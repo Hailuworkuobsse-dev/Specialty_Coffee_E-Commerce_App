@@ -28,7 +28,7 @@ app.use(helmet({
     directives: {
       defaultSrc: ["'self'"],
       scriptSrc: ["'self'", "'unsafe-inline'"],
-      styleSrc: ["'self'", "'unsafe-inline'],
+      styleSrc: ["'self'", "'unsafe-inline'"],
       imgSrc: ["'self'", 'data:', 'https:'],
       connectSrc: ["'self'", process.env.FRONTEND_URL || 'http://localhost:5173'],
       fontSrc: ["'self'"],
