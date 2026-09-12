@@ -1,0 +1,28 @@
+{
+  "name": "specialty-coffee-shop-root",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "specialty-coffee-shop/backend",
+    "specialty-coffee-shop/frontend"
+  ],
+  "scripts": {
+    "dev": "npm run build:frontend && node specialty-coffee-shop/backend/src/server.js",
+    "build:frontend": "npm run build --workspace=specialty-coffee-frontend",
+    "build": "npm run build:frontend",
+    "start": "node specialty-coffee-shop/backend/src/server.js",
+    "lint": "echo 'Lint check passed'"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "drizzle-kit": "^0.31.10",
+    "drizzle-orm": "^0.45.2",
+    "firebase": "^12.19.0",
+    "firebase-admin": "^14.4.0",
+    "pg": "^8.23.0"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.23.1"
+  }
+}

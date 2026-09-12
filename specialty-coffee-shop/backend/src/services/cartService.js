@@ -1,9 +1,7 @@
 // Cart Service - Business Logic for Shopping Cart Management
 // Phase 3: Cart, Checkout & Order Processing
 
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '../db/prisma.js';
 
 /**
  * Get or create cart for session/user

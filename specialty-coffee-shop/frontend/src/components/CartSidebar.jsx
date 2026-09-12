@@ -17,16 +17,20 @@ const CartSidebar = () => {
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [checkoutSuccess, setCheckoutSuccess] = useState(false);
 
+  const [checkoutError, setCheckoutError] = useState(null);
+
   const handleCheckout = async () => {
     try {
       setIsCheckingOut(true);
+      setCheckoutError(null);
       const response = await orderAPI.checkout(
-        localStorage.getItem('coffee_session_id'),
+        localStorage.getItem('coffee_session_id') || '',
         cartTotal
       );
       
       if (response.success) {
         setCheckoutSuccess(true);
+        await clearCart();
         setTimeout(() => {
           setCheckoutSuccess(false);
           closeCart();
@@ -34,7 +38,7 @@ const CartSidebar = () => {
       }
     } catch (error) {
       console.error('Checkout failed:', error);
-      alert('Checkout failed. Please try again.');
+      setCheckoutError(error.message || 'Checkout failed. Please try again.');
     } finally {
       setIsCheckingOut(false);
     }
@@ -181,6 +185,12 @@ const CartSidebar = () => {
               <span className="font-display text-lg font-bold text-espresso-900">Total</span>
               <span className="text-2xl font-bold text-espresso-900">${cartTotal.toFixed(2)}</span>
             </div>
+
+            {checkoutError && (
+              <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded">
+                {checkoutError}
+              </div>
+            )}
             
             {/* Checkout Button */}
             <button

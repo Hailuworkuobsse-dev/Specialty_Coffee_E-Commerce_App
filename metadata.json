@@ -1,0 +1,8 @@
+{
+  "name": "Specialty Coffee Shop",
+  "description": "Specialty Coffee E-Commerce Platform featuring 100 Ethiopian specialty coffees across 10 categories with session-based cart and checkout.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

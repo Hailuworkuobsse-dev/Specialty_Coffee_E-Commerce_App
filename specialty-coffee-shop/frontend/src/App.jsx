@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useProducts } from '../hooks/useProducts';
+import { useProducts } from './hooks/useProducts';
 import Navbar from './components/Navbar';
 import SearchFilter from './components/SearchFilter';
 import ProductGrid from './components/ProductGrid';

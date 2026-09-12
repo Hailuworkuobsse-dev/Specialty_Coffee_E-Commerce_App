@@ -21,31 +21,28 @@ export const initSessionMiddleware = (app) => {
  */
 export const sessionMiddleware = (req, res, next) => {
   try {
-    // Get session ID from cookie (NOT from query params - this is the security fix)
-    let sessionId = req.cookies[SESSION_COOKIE_NAME];
+    // Get session ID from cookie (primary) or header/query/body fallback (for iframe environments)
+    let sessionId = req.cookies?.[SESSION_COOKIE_NAME] || req.headers['x-session-id'] || req.query?.sessionId || req.body?.sessionId;
     
-    // If no session exists, create a new one
+    const isNew = !sessionId;
     if (!sessionId) {
       sessionId = uuidv4();
-      
-      // Set HTTP-only, Secure, SameSite=Strict cookie
-      // This prevents XSS attacks and CSRF attacks
-      const cookieOptions = {
-        httpOnly: true,        // Prevents JavaScript access (XSS protection)
-        secure: process.env.NODE_ENV === 'production', // HTTPS only in production
-        sameSite: 'strict',    // CSRF protection
-        maxAge: SESSION_DURATION_DAYS * 24 * 60 * 60 * 1000, // 7 days
-        path: '/'              // Available across entire site
-      };
-      
-      res.cookie(SESSION_COOKIE_NAME, sessionId, cookieOptions);
-      
-      req.sessionId = sessionId;
-      req.isNewSession = true;
-    } else {
-      req.sessionId = sessionId;
-      req.isNewSession = false;
     }
+    
+    // Set HTTP-only cookie with sameSite 'lax' for robust iframe and cross-page support
+    const cookieOptions = {
+      httpOnly: true,
+      secure: false, // allow local/preview HTTP
+      sameSite: 'lax',
+      maxAge: SESSION_DURATION_DAYS * 24 * 60 * 60 * 1000,
+      path: '/'
+    };
+    
+    res.cookie(SESSION_COOKIE_NAME, sessionId, cookieOptions);
+    res.setHeader('X-Session-ID', sessionId);
+    
+    req.sessionId = sessionId;
+    req.isNewSession = isNew;
     
     // Log for debugging (remove in production)
     console.log(`Session: ${req.isNewSession ? 'Created new' : 'Retrieved existing'} - ID: ${sessionId.substring(0, 8)}...`);

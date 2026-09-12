@@ -1,11 +1,9 @@
 // Cart Controller - Phase 1: Secure Session-Based Cart (CRITICAL FIX)
 // SEC-01/SC-05: Uses session from HTTP-only cookie, NOT from URL/query params
 
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../db/prisma.js';
 import { cartItemSchema, updateCartItemSchema } from '../schemas/validations.js';
 import { logger } from '../middleware/errorHandler.js';
-
-const prisma = new PrismaClient();
 
 /**
  * Get or create cart for session
@@ -83,12 +81,11 @@ export const getCart = async (req, res, next) => {
     
     res.json({ 
       success: true, 
-      data: {
-        items: itemsWithSubtotal,
-        total: parseFloat(total.toFixed(2)),
-        itemCount: cart.items.length,
-        currency: 'USD'
-      }
+      data: itemsWithSubtotal,
+      items: itemsWithSubtotal,
+      total: parseFloat(total.toFixed(2)),
+      itemCount: itemsWithSubtotal.reduce((acc, it) => acc + it.quantity, 0),
+      currency: 'USD'
     });
   } catch (error) {
     logger.error('Error fetching cart:', error);

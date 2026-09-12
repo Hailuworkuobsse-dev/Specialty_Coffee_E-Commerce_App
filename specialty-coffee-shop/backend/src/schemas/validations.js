@@ -4,9 +4,9 @@ import { z } from 'zod';
 
 // Schema for adding/updating cart items
 export const cartItemSchema = z.object({
-  productId: z.string().uuid('Product ID must be a valid UUID'),
+  productId: z.string().min(1, 'Product ID is required'),
   quantity: z.number().int().min(1, 'Quantity must be at least 1').max(99, 'Quantity cannot exceed 99'),
-  sessionId: z.string().min(1, 'Session ID is required').max(255)
+  sessionId: z.string().min(1).max(255).optional()
 });
 
 // Schema for updating cart item quantity
@@ -16,7 +16,7 @@ export const updateCartItemSchema = z.object({
 
 // Schema for checkout order
 export const checkoutOrderSchema = z.object({
-  sessionId: z.string().min(1, 'Session ID is required').max(255),
+  sessionId: z.string().min(1).max(255).optional(),
   total: z.number().positive('Total must be a positive number'),
   status: z.enum(['pending', 'processing', 'completed', 'cancelled']).optional().default('pending')
 });
@@ -30,10 +30,10 @@ export const productQuerySchema = z.object({
   roastLevel: z.string().max(50).optional(),
   minPrice: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Invalid price format').optional(),
   maxPrice: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Invalid price format').optional(),
-  inStock: z.preprocess((val) => val === 'true', z.boolean().optional()),
-  isFeatured: z.preprocess((val) => val === 'true', z.boolean().optional()),
-  page: z.preprocess((val) => parseInt(val), z.number().min(1).default(1)),
-  limit: z.preprocess((val) => parseInt(val), z.number().min(1).max(100).default(20))
+  inStock: z.preprocess((val) => val === 'true' ? true : (val === 'false' ? false : undefined), z.boolean().optional()),
+  isFeatured: z.preprocess((val) => val === 'true' ? true : (val === 'false' ? false : undefined), z.boolean().optional()),
+  page: z.preprocess((val) => (val !== undefined && val !== '' && !isNaN(val)) ? parseInt(val, 10) : 1, z.number().min(1).default(1)),
+  limit: z.preprocess((val) => (val !== undefined && val !== '' && !isNaN(val)) ? parseInt(val, 10) : 20, z.number().min(1).max(100).default(20))
 });
 
 // Schema for search query (Phase 2: Full-text Search)

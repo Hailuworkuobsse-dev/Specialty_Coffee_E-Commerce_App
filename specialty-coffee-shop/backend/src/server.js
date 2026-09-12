@@ -13,6 +13,8 @@ import { notFoundHandler, errorHandler, logger } from './middleware/errorHandler
 import { apiLimiter } from './middleware/rateLimiter.js';
 import apiRoutes from './routes/api.js';
 
+import fs from 'fs';
+
 // Load environment variables
 dotenv.config();
 
@@ -20,52 +22,24 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = 3000;
 
-// Security: Helmet for HTTP headers
+// Trust reverse proxy (Nginx / Cloud Run) for accurate IP resolution and express-rate-limit compatibility
+app.set('trust proxy', 1);
+
+// Security: Helmet for HTTP headers with iframe and asset compatibility
 app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'"],
-      styleSrc: ["'self'", "'unsafe-inline'],
-      imgSrc: ["'self'", 'data:', 'https:'],
-      connectSrc: ["'self'", process.env.FRONTEND_URL || 'http://localhost:5173'],
-      fontSrc: ["'self'"],
-      objectSrc: ["'none'"],
-      mediaSrc: ["'self'"],
-      frameSrc: ["'none'"]
-    }
-  },
-  hsts: {
-    maxAge: 31536000,
-    includeSubDomains: true,
-    preload: true
-  }
+  contentSecurityPolicy: false,
+  frameguard: false
 }));
 
-// CORS configuration - whitelist frontend origin
-const allowedOrigins = [
-  'http://localhost:3000',
-  'http://localhost:5173',
-  'http://127.0.0.1:3000',
-  'http://127.0.0.1:5173',
-  process.env.FRONTEND_URL
-].filter(Boolean);
-
+// CORS configuration - support cookies and preview origins
 app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      logger.warn(`CORS blocked origin: ${origin}`);
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true, // Required for HTTP-only cookies
+  origin: true,
+  credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  exposedHeaders: ['Set-Cookie'] // Allow frontend to read Set-Cookie header
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Session-ID', 'x-session-id'],
+  exposedHeaders: ['Set-Cookie', 'X-Session-ID']
 }));
 
 // Body parsing middleware
@@ -82,9 +56,14 @@ app.use(sessionMiddleware);
 app.use('/api', apiLimiter);
 
 // Health check endpoint
-app.get('/health', (req, res) => {
+app.get('/health', async (req, res) => {
+  let dbStatus = 'disconnected';
+  if (process.env.SQL_HOST && process.env.SQL_DB_NAME) {
+    dbStatus = 'connected (PostgreSQL Cloud SQL)';
+  }
   res.json({ 
     status: 'ok', 
+    database: dbStatus,
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     environment: process.env.NODE_ENV || 'development'
@@ -94,31 +73,32 @@ app.get('/health', (req, res) => {
 // API routes
 app.use('/api', apiRoutes);
 
-// Root endpoint
-app.get('/', (req, res) => {
-  res.json({
-    name: 'Specialty Coffee Shop API',
-    version: '2.0.0',
-    documentation: '/api/docs',
-    health: '/health'
+// Frontend static serving
+const frontendDist = path.resolve(__dirname, '../../frontend/dist');
+if (fs.existsSync(frontendDist)) {
+  app.use(express.static(frontendDist));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api') || req.path.startsWith('/health')) {
+      return next();
+    }
+    res.sendFile(path.join(frontendDist, 'index.html'));
   });
-});
+}
 
-// 404 handler
-app.use(notFoundHandler);
+// 404 handler for API routes
+app.use('/api', notFoundHandler);
 
 // Global error handler (must be last)
 app.use(errorHandler);
 
 // Create logs directory if it doesn't exist
-import fs from 'fs';
 const logsDir = path.join(process.cwd(), 'logs');
 if (!fs.existsSync(logsDir)) {
   fs.mkdirSync(logsDir, { recursive: true });
 }
 
-// Start server
-const server = app.listen(PORT, () => {
+// Start server on 0.0.0.0 for container ingress
+const server = app.listen(PORT, '0.0.0.0', () => {
   logger.info(`
 ╔════════════════════════════════════════════╗
 ║     Specialty Coffee Shop Backend v2.0     ║

@@ -1,12 +1,10 @@
 // Auth Service - Authentication & Authorization Logic
 // Phase 4: Authentication & Role-Based Access Control
 
-import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcrypt';
+import { prisma } from '../db/prisma.js';
+import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
-
-const prisma = new PrismaClient();
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 const JWT_EXPIRES_IN = '15m'; // Access token expires in 15 minutes

@@ -1,10 +1,8 @@
 // Product Controller - Phase 2: Enhanced Product Catalog & Search
 
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../db/prisma.js';
 import * as productService from '../services/productService.js';
 import { productQuerySchema, searchQuerySchema } from '../schemas/validations.js';
-
-const prisma = new PrismaClient();
 
 /**
  * GET /api/products - List all products with advanced filtering

@@ -1,9 +1,7 @@
 // Product Service - Business Logic Layer for Product Catalog
 // Phase 2: Product Catalog & Search Enhancement
 
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '../db/prisma.js';
 
 /**
  * Get products with advanced filtering and search

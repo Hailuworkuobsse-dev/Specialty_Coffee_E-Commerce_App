@@ -1,26 +1,26 @@
 // Order Controller
 
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../db/prisma.js';
 import { checkoutOrderSchema } from '../schemas/validations.js';
-
-const prisma = new PrismaClient();
 
 // POST /api/checkout - Process checkout and create order
 export const processCheckout = async (req, res) => {
   try {
     // Validate request body
     const validatedData = checkoutOrderSchema.parse(req.body);
-    const { sessionId, total, status = 'pending' } = validatedData;
+    const sessionId = req.sessionId || validatedData.sessionId;
+    const { total, status = 'pending' } = validatedData;
     
     if (!sessionId) {
       return res.status(400).json({ success: false, error: 'Session ID is required' });
     }
     
-    // Get cart items for this session
-    const cartItems = await prisma.cartItem.findMany({
-      where: { sessionId },
-      include: { product: true }
+    // Get cart for this session
+    const cart = await prisma.cart.findUnique({
+      where: { sessionId }
     });
+    
+    const cartItems = cart?.items || [];
     
     if (cartItems.length === 0) {
       return res.status(400).json({ 
@@ -31,10 +31,11 @@ export const processCheckout = async (req, res) => {
     
     // Verify stock availability for all items
     for (const item of cartItems) {
-      if (item.product.stock < item.quantity) {
+      const stock = item.product.stockCount !== undefined ? item.product.stockCount : item.product.stock;
+      if (stock < item.quantity) {
         return res.status(400).json({ 
           success: false, 
-          error: `Insufficient stock for ${item.product.name}. Only ${item.product.stock} available.` 
+          error: `Insufficient stock for ${item.product.name}. Only ${stock} available.` 
         });
       }
     }
@@ -43,29 +44,32 @@ export const processCheckout = async (req, res) => {
     const order = await prisma.order.create({
       data: {
         sessionId,
-        total,
-        status
+        total: total || cartItems.reduce((acc, it) => acc + (it.product.price * it.quantity), 0),
+        status,
+        customerName: req.body.customerName || 'Coffee Enthusiast',
+        customerEmail: req.body.customerEmail || 'customer@specialtycoffee.com'
       }
     });
     
     // Decrease product stock for each item
-    const stockUpdates = cartItems.map(item => 
-      prisma.product.update({
+    for (const item of cartItems) {
+      const currentStock = item.product.stockCount !== undefined ? item.product.stockCount : item.product.stock;
+      const newStock = Math.max(0, currentStock - item.quantity);
+      await prisma.product.update({
         where: { id: item.productId },
         data: {
-          stock: {
-            decrement: item.quantity
-          }
+          stockCount: newStock,
+          stock: newStock
         }
-      })
-    );
-    
-    await Promise.all(stockUpdates);
+      });
+    }
     
     // Clear the cart
-    await prisma.cartItem.deleteMany({
-      where: { sessionId }
-    });
+    if (cart?.id) {
+      await prisma.cartItem.deleteMany({
+        where: { cartId: cart.id }
+      });
+    }
     
     res.json({ 
       success: true, 

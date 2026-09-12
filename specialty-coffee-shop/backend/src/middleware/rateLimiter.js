@@ -8,7 +8,7 @@ import rateLimit from 'express-rate-limit';
  */
 export const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
+  max: 1000, // Generous ceiling for browsing 100 products and filtering
   message: {
     success: false,
     error: {
@@ -18,6 +18,7 @@ export const apiLimiter = rateLimit({
   },
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  validate: { xForwardedForHeader: false } // Avoid proxy validation exceptions behind reverse proxies
 });
 
 /**
@@ -26,7 +27,7 @@ export const apiLimiter = rateLimit({
  */
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // Limit each IP to 5 requests per windowMs
+  max: 20, // Limit each IP to 20 requests per windowMs
   message: {
     success: false,
     error: {
@@ -37,6 +38,7 @@ export const authLimiter = rateLimit({
   skipSuccessfulRequests: true, // Only count failed requests
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { xForwardedForHeader: false }
 });
 
 /**
@@ -45,7 +47,7 @@ export const authLimiter = rateLimit({
  */
 export const searchLimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
-  max: 30, // Limit each IP to 30 searches per minute
+  max: 60, // Limit each IP to 60 searches per minute
   message: {
     success: false,
     error: {
@@ -55,6 +57,7 @@ export const searchLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { xForwardedForHeader: false }
 });
 
 /**
@@ -63,7 +66,7 @@ export const searchLimiter = rateLimit({
  */
 export const checkoutLimiter = rateLimit({
   windowMs: 5 * 60 * 1000, // 5 minutes
-  max: 3, // Limit each IP to 3 checkouts per 5 minutes
+  max: 30, // Limit each IP to 30 checkouts per 5 minutes
   message: {
     success: false,
     error: {
@@ -73,6 +76,7 @@ export const checkoutLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { xForwardedForHeader: false }
 });
 
 export default {
@@ -81,3 +85,4 @@ export default {
   searchLimiter,
   checkoutLimiter
 };
+

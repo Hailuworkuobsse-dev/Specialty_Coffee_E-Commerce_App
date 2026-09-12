@@ -1,25 +1,36 @@
 // API Client for Backend Communication
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 // Helper function to handle fetch requests
 async function fetchAPI(endpoint, options = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
   
+  let localSessionId = null;
+  try {
+    localSessionId = localStorage.getItem('coffee_session_id');
+  } catch (e) {}
+
   const config = {
     ...options,
+    credentials: 'include', // Ensures HTTP-only session cookies are sent and received
     headers: {
       'Content-Type': 'application/json',
+      ...(localSessionId ? { 'X-Session-ID': localSessionId } : {}),
       ...options.headers,
     },
   };
   
   try {
     const response = await fetch(url, config);
+    const sid = response.headers.get('x-session-id');
+    if (sid) {
+      try { localStorage.setItem('coffee_session_id', sid); } catch (e) {}
+    }
     const data = await response.json();
     
     if (!response.ok) {
-      throw new Error(data.error || 'Request failed');
+      throw new Error(data.error?.message || data.error || 'Request failed');
     }
     
     return data;
