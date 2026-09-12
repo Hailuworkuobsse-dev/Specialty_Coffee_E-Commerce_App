@@ -140,3 +140,6 @@ export default {
   errorHandler,
   asyncHandler
 };
+
+// Named export for logger to be imported directly
+export { logger };

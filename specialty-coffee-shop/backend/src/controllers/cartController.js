@@ -3,7 +3,9 @@
 
 import { PrismaClient } from '@prisma/client';
 import { cartItemSchema, updateCartItemSchema } from '../schemas/validations.js';
-import { logger } from '../middleware/errorHandler.js';
+import errorHandler from '../middleware/errorHandler.js';
+
+const logger = errorHandler.logger;
 
 const prisma = new PrismaClient();
 
